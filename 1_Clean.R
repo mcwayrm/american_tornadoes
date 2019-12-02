@@ -15,11 +15,10 @@
 ########################################
 
 ########################################
-# Include your own personal local and comment out the others
+# Local Directory Paths
 
-setwd("C:/Users/Ryry/Dropbox/American Tornadoes/scripts")
-# setwd("jessie local")
-# setwd("lilla local")
+setwd("C:/Users/Ryry/Dropbox/American Tornadoes/scripts") # Ryan local
+# setwd("~/Dropbox/American Tornadoes/scripts") # Lilla local
 ########################################
 
 ########################################
@@ -27,15 +26,15 @@ setwd("C:/Users/Ryry/Dropbox/American Tornadoes/scripts")
 ########################################
 
 # Handling Dataframes
-library(tidyverse)
-library(dplyr)
-library(reshape2)
+library('tidyverse')
+library('dplyr')
+library('reshape2')
 # Importing excels
-library(readxl) #TODO: Only need this package if we end up using fips...
+library('readxl')
 # Geospatial Packages
-library(sf)
-library(raster)
-library(rgdal)  ## TODO: Unsure if we need raster and rgdal if we have the sf package. To be seen.
+library('sf')
+library('raster')
+library('rgdal')
 
 ########################################
 
@@ -88,21 +87,10 @@ ma_gdp <- read.csv("../input/MAGDP2_2001_2017_ALL_AREAS.csv", header = TRUE, na.
     industry_class = IndustryClassification,
     sector = Description
   ) 
-  ## TODO: What the hell is (D) in the dataset?
-  
-
-# TODO: Unsure if we need the fips and tiger2017 data. Will have to see as we progress
+## TODO: What the hell is (D) in the dataset? Mark (D) as NA as well
 
 #       2.3: Spatial Data
-# fips <- read_excel("../input/US_FIPS_Codes.xls", col_names=TRUE, na= "") %>% 
-#   rename(
-#     state = "State",
-#     county = "County Name",
-#     fip_state = "FIPS State",
-#     fip_county = "FIPS County"
-#   )
-# 
-# tiger2017 <- read_sf("../input/tiger_2017/tl_2017_us_cbsa.shp") 
+census_track <-  read_sf("../input/census/tl_2019_us_county.shp")
 ########################################
 
 ########################################
@@ -110,8 +98,6 @@ ma_gdp <- read.csv("../input/MAGDP2_2001_2017_ALL_AREAS.csv", header = TRUE, na.
 ########################################
 
 #       3.1: Drop and add variables in MSA
-ma_gdp <- ma_gdp %>% 
-  select(ma_gdp, -Region, -TableName, -Unit, -ComponentName) ## TODO: WHY DOESN"T THIS WORK?
 ma_gdp$Region <- NULL
 ma_gdp$TableName <- NULL
 ma_gdp$Unit <- NULL
@@ -138,24 +124,61 @@ ma_gdp$key2 <-  paste(ma_gdp$state, ma_gdp$year, sep = '')
 #     Step 4: Merge
 ########################################
 
-#       4.1: Merge tornado data
-nados <- merge(torn_as_path, tornados, by = c('key'), duplicateGeoms = TRUE) %>% 
-  rename(
-    year = year.x,
-    state = state.x
-  ) 
+#       4.1: MSA to Census
 
-#       4.2: Merge GDP data with nado shapefiles
-nados <-  subset(nados, year > 2000)
-nados$key2 <-  paste(nados$state, nados$year, sep = '')
-master <- merge(nados, ma_gdp, by = c('key2'), duplicateGeoms = TRUE)
-  # TODO: Succesfully need to merge nados with gdp data on year and state, may need to do this by creating unique key
-      
+
 ########################################
 
 ########################################
 #     Step 5: Export
 ########################################
 
-write_sf(master, path= "../edit/master_nados.shp", na= "", col.names = TRUE)
+#     5.1 Save clean nado_paths
+write_csv(ma_gdp, path = '../edit/merge_prep_gdp.csv', na = "")
+st_write(nados)
 
+#     5.2 Save merged census track
+
+
+#######################
+# Next Step: Merge in ArcGIS
+#######################
+
+
+########################################
+#     Spatial Line Vectors
+########################################
+
+library(sp)
+library(rgdal)
+library(raster)
+library(ggplot2)
+library(rgeos)
+library(mapview)
+library(leaflet)
+library(broom)
+library(maptools)
+library(zipcode)
+library(ggmap)
+library(sp)
+library(rworldmap)
+options(stringsasfacotrs = FALSE)
+
+nados_loc<-nados[,c("start_lat.x","start_lon.x","end_lat.x","end_lon.x","key")]
+map<-get_map(location='united_states',zoom=4,maptype='terrain',source='google',color='color')
+plot_nado_loc <- st_as_sf(nados_loc1, coords = c("start.lat.x", "start.lon.x"), crs = utm18nCRS)
+
+map<-getMap(resosultion="low")
+
+shape_file <- st_read("../input/1950-2017-torn-aspath/1950-2017-torn-aspath.shp")
+st_geometry_type(shape_file)
+st_crs(shape_file)
+st_bbox(shape_file)
+ggplot() + 
+  geom_sf(data = shape_file, size = 3, color = "black", fill = "cyan1") + 
+  ggtitle("Tornado Plot") + 
+  coord_sf()
+
+plot(shape_file, col="cyan1", border="black", lwd=3,
+     main="Tornado Plot")
+plot(shape_file)
