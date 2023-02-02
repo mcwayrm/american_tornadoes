@@ -1,2 +1,21 @@
-# American_Tornadoes
-Research on Effect of American Tornadoes on the Midwestern and Southern US States
+############################
+Project: American Tornado Shocks on U.S. Metropolosis
+Authors: Ryan McWay, Jesse Antilla-Hughes
+############################
+
+# Abstract: 
+
+
+# Publication: 
+
+
+
+# Scripts: 
+
+
+
+# Data: 
+
+
+# Replication: 
+
